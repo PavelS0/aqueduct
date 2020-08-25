@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:aqueduct/src/http/resource_controller_interfaces.dart';
 import 'package:aqueduct/src/openapi/openapi.dart';
-import 'package:aqueduct/src/runtime/runtime.dart';
 import 'package:logging/logging.dart';
+import 'package:runtime/runtime.dart';
 
 import 'http.dart';
 
@@ -436,4 +437,10 @@ class _FunctionController extends Controller {
 
     return nextController?.documentOperations(context, route, path);
   }
+}
+
+abstract class ControllerRuntime {
+  bool get isMutable;
+
+  ResourceControllerRuntime get resourceController;
 }

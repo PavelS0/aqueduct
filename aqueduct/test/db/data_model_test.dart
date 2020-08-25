@@ -1,10 +1,8 @@
-import 'dart:mirrors';
-
 import 'package:aqueduct/aqueduct.dart';
 import 'package:aqueduct/src/db/managed/relationship_type.dart';
 import 'package:test/test.dart';
 
-import '../helpers.dart';
+import 'package:aqueduct/src/dev/helpers.dart';
 
 void main() {
   group("Valid data model", () {
@@ -23,19 +21,19 @@ void main() {
     test("Entities have appropriate types", () {
       var entity = dataModel.entityForType(User);
       expect(User == entity.instanceType, true);
-      expect(_User == entity.tableDefinition, true);
+      expect('_User' == entity.tableDefinition, true);
 
       entity = dataModel.entityForType(Item);
       expect(Item == entity.instanceType, true);
-      expect(_Item == entity.tableDefinition, true);
+      expect('_Item' == entity.tableDefinition, true);
 
       entity = dataModel.entityForType(Manager);
       expect(Manager == entity.instanceType, true);
-      expect(_Manager == entity.tableDefinition, true);
+      expect('_Manager' == entity.tableDefinition, true);
 
       entity = dataModel.entityForType(EnumObject);
       expect(EnumObject == entity.instanceType, true);
-      expect(_EnumObject == entity.tableDefinition, true);
+      expect('_EnumObject' == entity.tableDefinition, true);
     });
 
     test("Non-existent entity is null", () {
@@ -417,14 +415,10 @@ void main() {
 
     var joinEntity = model.entityForType(JoinMany);
     expect(
-        reflectType(
-                joinEntity.relationships["left"].destinationEntity.instanceType)
-            .isSubtypeOf(reflectType(LeftMany)),
+      joinEntity.relationships["left"].destinationEntity.instanceType == LeftMany,
         true);
-    expect(
-        reflectType(joinEntity
-                .relationships["right"].destinationEntity.instanceType)
-            .isSubtypeOf(reflectType(RightMany)),
+    expect(joinEntity
+      .relationships["right"].destinationEntity.instanceType == RightMany,
         true);
   });
 

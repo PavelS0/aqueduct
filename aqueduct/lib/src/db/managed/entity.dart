@@ -2,8 +2,7 @@ import 'package:aqueduct/src/db/managed/backing.dart';
 import 'package:aqueduct/src/db/managed/key_path.dart';
 import 'package:aqueduct/src/openapi/documentable.dart';
 import 'package:aqueduct/src/openapi/openapi.dart';
-import 'package:aqueduct/src/runtime/orm/orm.dart';
-import 'package:aqueduct/src/runtime/runtime.dart';
+import 'package:runtime/runtime.dart';
 
 import '../query/query.dart';
 import 'managed.dart';
@@ -46,13 +45,14 @@ class ManagedEntity implements APIComponentDocumenter {
   ///
   /// If running in default mode (mirrors enabled), is a set of mirror operations. Otherwise,
   /// code generated.
-  ManagedEntityRuntime get runtime => Runtime.current.managedEntities[instanceType];
+  ManagedEntityRuntime get runtime =>
+      RuntimeContext.current[instanceType] as ManagedEntityRuntime;
 
-  /// The type of persistent instances represented by this entity.
+  /// The name of type of persistent instances represented by this entity.
   ///
-  /// Managed objects are made up of two components, a table definition and an instance type. The system uses this type to define
-  /// the mapping to the underlying database table.
-  final Type tableDefinition;
+  /// Managed objects are made up of two components, a table definition and an instance type.
+  /// The system uses this type to define the mapping to the underlying database table.
+  final String tableDefinition;
 
   /// All attribute values of this entity.
   ///
@@ -168,7 +168,8 @@ class ManagedEntity implements APIComponentDocumenter {
   /// If [backing] is non-null, it will be the backing map of the returned object.
   T instanceOf<T extends ManagedObject>({ManagedBacking backing}) {
     if (backing != null) {
-      return (runtime.instanceOfImplementation(backing: backing)..entity = this) as T;
+      return (runtime.instanceOfImplementation(backing: backing)..entity = this)
+          as T;
     }
     return (runtime.instanceOfImplementation()..entity = this) as T;
   }
@@ -284,23 +285,21 @@ class ManagedEntity implements APIComponentDocumenter {
 
   APISchemaObject document(APIDocumentContext context) {
     final schemaProperties = <String, APISchemaObject>{};
-    final obj = APISchemaObject.object(schemaProperties)
-      ..title = "$name";
+    final obj = APISchemaObject.object(schemaProperties)..title = "$name";
 
     final buffer = StringBuffer();
     if (uniquePropertySet != null) {
-      final propString =
-      uniquePropertySet.map((s) => "'${s.name}'").join(", ");
+      final propString = uniquePropertySet.map((s) => "'${s.name}'").join(", ");
       buffer.writeln(
-        "No two objects may have the same value for all of: $propString.");
+          "No two objects may have the same value for all of: $propString.");
     }
 
     obj.description = buffer.toString();
 
     properties.forEach((name, def) {
       if (def is ManagedAttributeDescription &&
-        !def.isIncludedInDefaultResultSet &&
-        !def.isTransient) {
+          !def.isIncludedInDefaultResultSet &&
+          !def.isTransient) {
         return;
       }
 
@@ -338,7 +337,29 @@ class ManagedEntity implements APIComponentDocumenter {
   @override
   void documentComponents(APIDocumentContext context) {
     final obj = document(context);
-    context.schema
-        .register(name, obj, representation: instanceType);
+    context.schema.register(name, obj, representation: instanceType);
   }
+}
+
+abstract class ManagedEntityRuntime {
+  void finalize(ManagedDataModel dataModel) {}
+
+  ManagedEntity get entity;
+
+  ManagedObject instanceOfImplementation({ManagedBacking backing});
+
+  ManagedSet setOfImplementation(Iterable<dynamic> objects);
+
+  void setTransientValueForKey(ManagedObject object, String key, dynamic value);
+
+  dynamic getTransientValueForKey(ManagedObject object, String key);
+
+  bool isValueInstanceOf(dynamic value);
+
+  bool isValueListOf(dynamic value);
+
+  String getPropertyName(Invocation invocation, ManagedEntity entity);
+
+  dynamic dynamicConvertFromPrimitiveValue(
+      ManagedPropertyDescription property, dynamic value);
 }
